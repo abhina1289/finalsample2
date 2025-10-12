@@ -1,27 +1,25 @@
-// routes/expenseRoutes.js
 const express = require('express');
 const router = express.Router();
+const { authenticateToken } = require('../middleware/jwtMiddleware');
 const {
   getAllExpenses,
   addExpense,
+  updateExpense,
   deleteExpense,
   clearAllExpenses,
-  getTotalExpenses
+  getTotalExpenses,
+  getAllExpensesForAdmin
 } = require('../controllers/expenseController');
 
-// GET /api/expenses - Get all expenses
-router.get('/expenses', getAllExpenses);
+// IMPORTANT: Specific routes must come before parameterized routes
+router.get('/total', authenticateToken, getTotalExpenses);
+router.get('/admin/all', authenticateToken, getAllExpensesForAdmin);
 
-// POST /api/expenses - Add new expense
-router.post('/expenses', addExpense);
-
-// DELETE /api/expenses/:id - Delete specific expense
-router.delete('/expenses/:id', deleteExpense);
-
-// DELETE /api/expenses - Clear all expenses
-router.delete('/expenses', clearAllExpenses);
-
-// GET /api/expenses/total - Get total expenses
-router.get('/expenses/total', getTotalExpenses);
+// User routes
+router.get('/', authenticateToken, getAllExpenses);
+router.post('/', authenticateToken, addExpense);
+router.put('/:id', authenticateToken, updateExpense);
+router.delete('/:id', authenticateToken, deleteExpense);
+router.delete('/', authenticateToken, clearAllExpenses);
 
 module.exports = router;

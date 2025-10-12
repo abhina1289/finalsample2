@@ -1,54 +1,107 @@
-const Budget = require('../modal/budgetModal');
+const Budget = require('../model/budgetModel');
 
-// Create new budget entry
-
-exports.createBudget = async (req, res) => {
+// Add or Update Budget Deposit
+exports.addBudget = async (req, res) => {
   try {
-    const newBudget = new Budget(req.body);
-    await newBudget.save();
-    res.status(201).json(newBudget);
+    const { depositAmount } = req.body;
+    const userId = req.user.id; // From JWT middleware
+
+    if (!depositAmount || isNaN(depositAmount) || parseFloat(depositAmount) <= 0) {
+      return res.status(400).json({ 
+        message: "Invalid deposit amount. Please enter a positive number." 
+      });
+    }
+
+    const amount = parseFloat(depositAmount);
+    let budget = await Budget.findOne({ userId });
+
+    if (budget) {
+      budget.totalBudget += amount;
+      budget.remainingBudget += amount;
+    } else {
+      budget = new Budget({
+        userId,
+        totalBudget: amount,
+        usedBudget: 0,
+        remainingBudget: amount
+      });
+    }
+
+    await budget.save();
+
+    res.status(200).json({
+      message: "Budget deposit successful",
+      budget
+    });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Error in addBudget:', error);
+    res.status(500).json({ 
+      message: "Internal server error while depositing budget" 
+    });
   }
 };
 
-// Get all budget entries
-exports.getBudgets = async (req, res) => {
+// Get Current Budget
+exports.getBudget = async (req, res) => {
   try {
-    const budgets = await Budget.find();
-    res.json(budgets);
+    const userId = req.user.id;
+    const budget = await Budget.findOne({ userId });
+    
+    if (!budget) {
+      return res.status(404).json({ 
+        message: "No budget found. Please deposit some amount first." 
+      });
+    }
+
+    res.status(200).json({ budget });
   } catch (error) {
-    res.status(200).json({ message: error.message });
+    console.error('Error in getBudget:', error);
+    res.status(500).json({ 
+      message: "Internal server error while fetching budget" 
+    });
   }
 };
 
-// Get single budget by ID
-exports.getBudgetById = async (req, res) => {
+// Update used budget (expense tracking)
+exports.updateUsedBudget = async (req, res) => {
   try {
-    const budget = await Budget.findById(req.params.id);
-    if (!budget) return res.status(404).json({ message: "Budget not found" });
-    res.json(budget);
-  } catch (error) {
-    res.status(200).json({ message: error.message });
-  }
-};
+    const { expenseAmount } = req.body;
+    const userId = req.user.id;
 
-// Update budget
-exports.updateBudget = async (req, res) => {
-  try {
-    const updatedBudget = await Budget.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updatedBudget);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+    if (!expenseAmount || isNaN(expenseAmount) || parseFloat(expenseAmount) <= 0) {
+      return res.status(400).json({ 
+        message: "Invalid expense amount. Please enter a positive number." 
+      });
+    }
 
-// Delete budget
-exports.deleteBudget = async (req, res) => {
-  try {
-    await Budget.findByIdAndDelete(req.params.id);
-    res.json({ message: "Budget deleted successfully" });
+    const amount = parseFloat(expenseAmount);
+    const budget = await Budget.findOne({ userId });
+
+    if (!budget) {
+      return res.status(404).json({ 
+        message: "No budget found. Please deposit some amount first." 
+      });
+    }
+
+    if (amount > budget.remainingBudget) {
+      return res.status(400).json({ 
+        message: "Insufficient budget. Cannot exceed remaining budget." 
+      });
+    }
+
+    budget.usedBudget += amount;
+    budget.remainingBudget -= amount;
+
+    await budget.save();
+
+    res.status(200).json({
+      message: "Budget updated successfully",
+      budget
+    });
   } catch (error) {
-    res.status(200).json({ message: error.message });
+    console.error('Error in updateUsedBudget:', error);
+    res.status(500).json({ 
+      message: "Internal server error while updating budget" 
+    });
   }
 };

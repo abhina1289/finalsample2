@@ -1,21 +1,50 @@
 const mongoose = require('mongoose');
 
-const fundSchema = new mongoose.Schema({
-  title: String,
-  saved: Number,
-  goal: Number,
-  start: Number,
-  monthsLeft: Number,
-});
-
 const budgetSchema = new mongoose.Schema({
-  year: Number,
-  totalSavingsGoal: Number,
-  startCapital: Number,
-  monthlyPayments: Number,
-  totalSaved: Number,
-  leftToSave: Number,
-  funds: [fundSchema],
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  totalBudget: {
+    type: Number,
+    required: true,
+    default: 0,
+    min: [0, 'Total budget cannot be negative']
+  },
+  usedBudget: {
+    type: Number,
+    required: true,
+    default: 0,
+    min: [0, 'Used budget cannot be negative']
+  },
+  remainingBudget: {
+    type: Number,
+    required: true,
+    default: 0,
+    min: [0, 'Remaining budget cannot be negative']
+  }
+}, {
+  timestamps: true,
+  collection: 'budgets'
 });
 
-module.exports = mongoose.model('Budget', budgetSchema);
+// Keep consistency before save
+budgetSchema.pre('save', function(next) {
+  this.remainingBudget = this.totalBudget - this.usedBudget;
+  if (this.usedBudget > this.totalBudget) {
+    next(new Error('Used budget cannot exceed total budget'));
+  } else {
+    next();
+  }
+});
+
+// Virtual property for % utilization
+budgetSchema.virtual('utilizationPercentage').get(function() {
+  return this.totalBudget > 0 ? Math.round((this.usedBudget / this.totalBudget) * 100) : 0;
+});
+
+budgetSchema.set('toJSON', { virtuals: true });
+
+// ✅ Prevent OverwriteModelError
+module.exports = mongoose.models.Budget || mongoose.model('Budget', budgetSchema);

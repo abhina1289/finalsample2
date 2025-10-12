@@ -1,17 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createBudget,
-  getBudgets,
-  getBudgetById,
-  updateBudget,
-  deleteBudget,
+const { 
+  addBudget, 
+  getBudget, 
+  updateUsedBudget 
 } = require('../controllers/budgetController');
+const { authenticateToken } = require('../middleware/jwtMiddleware');
 
-router.post('/', createBudget);
-router.get('/', getBudgets);
-router.get('/:id', getBudgetById);
-router.put('/:id', updateBudget);
-router.delete('/:id', deleteBudget);
+// 💰 Add deposit to budget (per user)
+router.post('/deposit', authenticateToken, addBudget);
+
+// 📊 Get current budget for logged-in user
+router.get('/', authenticateToken, getBudget);
+
+// 🧾 Update used budget for expenses (deduct from remaining)
+router.post('/expense', authenticateToken, updateUsedBudget);
 
 module.exports = router;

@@ -1,31 +1,23 @@
+// routes/receiptRoutes.js
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-const path = require("path");
+const { authenticateToken } = require("../middleware/jwtMiddleware");
 
 const {
   createReceipt,
   getReceipts,
+  getReceiptById,
   updateReceipt,
   deleteReceipt,
-} = require("./receiptController");
+  getTotalReceipts
+} = require("../controllers/receiptController");
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage });
-
-// Routes
-router.post("/", upload.single("image"), createReceipt);
-router.get("/", getReceipts);
-router.put("/:id", upload.single("image"), updateReceipt);
-router.delete("/:id", deleteReceipt);
+// ✅ Receipt routes (all protected by JWT)
+router.post("/", authenticateToken, createReceipt);        // ➕ Create new receipt
+router.get("/", authenticateToken, getReceipts);          // 📂 Get all receipts (user-specific)
+router.get("/total", authenticateToken, getTotalReceipts);// 📊 Get totals for receipts
+router.get("/:id", authenticateToken, getReceiptById);    // 📄 Get single receipt
+router.put("/:id", authenticateToken, updateReceipt);     // ✏️ Update receipt
+router.delete("/:id", authenticateToken, deleteReceipt);  // ❌ Delete receipt
 
 module.exports = router;
- 
