@@ -38,7 +38,7 @@ const contactRoutes = require('./routes/contactRoutes')
 const receiptRoutes = require('./routes/receiptRoutes')
 const userRoutes = require('./routes/userRoutes')
 const budgetRoutes = require('./routes/budgetRoutes');
-const demoRoutes= require('./routes/demoRoutes')
+// const demoRoutes= require('./routes/demoRoutes')
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -69,7 +69,7 @@ app.use('/api/contact', contactRoutes)
 app.use('/api/receipts', receiptRoutes)
 app.use('/api/users', userRoutes) 
 app.use('/api/budget',budgetRoutes);
-app.use('/api/demo',demoRoutes)
+// app.use('/api/demo',demoRoutes)
 
 // Error handling middleware
 app.use((err, req, res, next) => {
